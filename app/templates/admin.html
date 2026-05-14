@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Admin &mdash; Coffee Compare{% endblock %}
+{% block content %}
+<section class="admin">
+  <header class="admin-head">
+    <h1>Dashboard</h1>
+    <p class="muted">Anonymous search analytics &amp; scraper coverage</p>
+  </header>
+
+  <div class="admin-grid">
+    <article class="panel">
+      <h2>Top producers searched <small>(7d)</small></h2>
+      {% if trends_producer %}
+      <ol class="rank">
+        {% for q, n, s in trends_producer %}
+        <li><span class="rank-name">{{ q }}</span><span class="rank-count">{{ n }}</span></li>
+        {% endfor %}
+      </ol>
+      {% else %}<p class="muted">No data yet.</p>{% endif %}
+    </article>
+
+    <article class="panel">
+      <h2>Top varietals searched <small>(7d)</small></h2>
+      {% if trends_varietal %}
+      <ol class="rank">
+        {% for q, n, s in trends_varietal %}
+        <li><span class="rank-name">{{ q }}</span><span class="rank-count">{{ n }}</span></li>
+        {% endfor %}
+      </ol>
+      {% else %}<p class="muted">No data yet.</p>{% endif %}
+    </article>
+
+    <article class="panel">
+      <h2>Top countries searched <small>(7d)</small></h2>
+      {% if trends_country %}
+      <ol class="rank">
+        {% for q, n, s in trends_country %}
+        <li><span class="rank-name">{{ q }}</span><span class="rank-count">{{ n }}</span></li>
+        {% endfor %}
+      </ol>
+      {% else %}<p class="muted">No data yet.</p>{% endif %}
+    </article>
+
+    <article class="panel">
+      <h2>URL pastes <small>(7d)</small></h2>
+      {% if trends_url %}
+      <ol class="rank">
+        {% for q, n, s in trends_url %}
+        <li><span class="rank-name">{{ q }}</span><span class="rank-count">{{ n }}</span></li>
+        {% endfor %}
+      </ol>
+      {% else %}<p class="muted">No data yet.</p>{% endif %}
+    </article>
+  </div>
+
+  <article class="panel panel-wide">
+    <h2>Heat map &mdash; country search volume <small>(30d)</small></h2>
+    <div id="heatmap" data-points='{{ heatmap | tojson }}'></div>
+    <p class="muted small">Larger discs = more searches. Coordinates resolved client-side from a static gazetteer.</p>
+  </article>
+
+  <article class="panel panel-wide">
+    <h2>Roaster coverage</h2>
+    <table class="data">
+      <thead><tr>
+        <th>Roaster</th><th>Platform</th><th>Total</th><th>Extracted</th>
+        <th>Last scrape</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        {% for c in coverage %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td class="muted small">{{ c.platform }}</td>
+          <td class="num">{{ c.total }}</td>
+          <td class="num">{{ c.extracted_pct }}%</td>
+          <td class="muted small">{{ c.last_scraped.isoformat() if c.last_scraped else '—' }}</td>
+          <td><span class="pill pill-{{ c.last_status }}">{{ c.last_status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+
+  <article class="panel panel-wide">
+    <h2>Recent scrape runs</h2>
+    <table class="data">
+      <thead><tr>
+        <th>Roaster</th><th>Started</th><th>Finished</th>
+        <th>Seen</th><th>New</th><th>Updated</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        {% for r in runs %}
+        <tr>
+          <td>{{ r.roaster }}</td>
+          <td class="muted small">{{ r.started.strftime('%m-%d %H:%M') if r.started else '—' }}</td>
+          <td class="muted small">{{ r.finished.strftime('%m-%d %H:%M') if r.finished else '—' }}</td>
+          <td class="num">{{ r.seen }}</td>
+          <td class="num">{{ r.new }}</td>
+          <td class="num">{{ r.updated }}</td>
+          <td><span class="pill pill-{{ r.status }}">{{ r.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/heatmap.js" defer></script>
+{% endblock %}

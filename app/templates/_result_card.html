@@ -1,0 +1,36 @@
+<li class="result-card {{ 'is-out' if not r.in_stock else '' }}">
+  <div class="card-row">
+    <div class="card-main">
+      <p class="roaster-name">{{ r.roaster_name }}</p>
+      <h3 class="coffee-title">
+        <a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+      </h3>
+      <dl class="coffee-meta">
+        {% if r.producer %}<div><dt>Producer</dt><dd>{{ r.producer }}</dd></div>{% endif %}
+        {% if r.farm %}<div><dt>Farm</dt><dd>{{ r.farm }}</dd></div>{% endif %}
+        {% if r.varietal %}<div><dt>Varietal</dt><dd>{{ r.varietal }}</dd></div>{% endif %}
+        {% if r.process %}<div><dt>Process</dt><dd>{{ r.process }}</dd></div>{% endif %}
+        {% if r.country %}<div><dt>Origin</dt><dd>
+          {%- if r.region %}{{ r.region }}, {% endif -%}{{ r.country }}
+        </dd></div>{% endif %}
+      </dl>
+    </div>
+    <div class="card-side">
+      <div class="score-block" data-score="{{ r.score }}">
+        <span class="score-num">{{ r.score }}</span>
+        <span class="score-of">/ 100</span>
+        <span class="score-label">{{ r.score_label }}</span>
+      </div>
+      <div class="price-block">
+        {% if r.price_per_oz %}
+          <span class="price">{{ format_price_per_oz(r.price_per_oz) }}</span>
+        {% else %}
+          <span class="price muted">price unknown</span>
+        {% endif %}
+        <span class="stock {{ 'in' if r.in_stock else 'out' }}">
+          {{ 'In stock' if r.in_stock else 'Sold out' }}
+        </span>
+      </div>
+    </div>
+  </div>
+</li>

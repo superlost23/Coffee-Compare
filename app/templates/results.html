@@ -1,0 +1,72 @@
+{% if not had_query %}
+<div class="empty">
+  <p>Enter a URL or fill in at least one field above.</p>
+</div>
+{% else %}
+
+{% set q = query %}
+<div class="resolved-query">
+  <p class="resolved-label">Looking for</p>
+  <p class="resolved-line">
+    {%- set parts = [] -%}
+    {%- if q.producer %}{% set _ = parts.append(q.producer) %}{% endif -%}
+    {%- if q.farm %}{% set _ = parts.append(q.farm) %}{% endif -%}
+    {%- if q.varietal %}{% set _ = parts.append(q.varietal) %}{% endif -%}
+    {%- if q.process %}{% set _ = parts.append(q.process) %}{% endif -%}
+    {%- if q.region %}{% set _ = parts.append(q.region) %}{% endif -%}
+    {%- if q.country %}{% set _ = parts.append(q.country) %}{% endif -%}
+    {{ parts | join(' &middot; ') | safe if parts else 'a specific coffee' }}
+  </p>
+</div>
+
+{% if results.exact %}
+<section class="result-group">
+  <header class="group-head">
+    <h2>Exact matches</h2>
+    <span class="count">{{ results.exact|length }}</span>
+  </header>
+  <ul class="result-list">
+    {% for r in results.exact %}
+      {% include "_result_card.html" %}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if results.similar %}
+<section class="result-group">
+  <header class="group-head">
+    <h2>Very similar</h2>
+    <span class="count">{{ results.similar|length }}</span>
+  </header>
+  <ul class="result-list">
+    {% for r in results.similar %}
+      {% include "_result_card.html" %}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if results.alternatives %}
+<section class="result-group">
+  <header class="group-head">
+    <h2>Alternatives you might like</h2>
+    <span class="count">{{ results.alternatives|length }}</span>
+  </header>
+  <p class="group-note">We couldn&rsquo;t find this exact coffee &mdash; here are the closest matches we have. Confidence shown per result.</p>
+  <ul class="result-list">
+    {% for r in results.alternatives %}
+      {% include "_result_card.html" %}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if not results.exact and not results.similar and not results.alternatives %}
+<div class="empty empty-result">
+  <p>No matches yet. We searched {{ results.examined }} candidates.</p>
+  <p class="muted">If this is a roaster we don&rsquo;t track yet, paste their URL and we&rsquo;ll add them to the index.</p>
+</div>
+{% endif %}
+
+{% endif %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Privacy &mdash; Coffee Compare{% endblock %}
+{% block content %}
+<article class="prose">
+<h1>Privacy</h1>
+
+<p>This site exists to compare specialty coffee prices. It collects the absolute minimum data needed to do that &mdash; nothing else.</p>
+
+<h2>What we don&rsquo;t collect</h2>
+<ul>
+  <li>No cookies. The site sets none.</li>
+  <li>No analytics scripts (no Google Analytics, no Plausible, no Fathom).</li>
+  <li>No IP addresses are stored. Web-server access logs are configured to drop them.</li>
+  <li>No user agents, browser fingerprints, or device IDs.</li>
+  <li>No accounts. There is no sign-up.</li>
+</ul>
+
+<h2>What we do log</h2>
+<p>To know which producers and varietals people are searching for, we record one row per search containing only:</p>
+<ul>
+  <li>The hour (not minute or second) the search happened</li>
+  <li>What kind of search it was (URL paste, producer, varietal, etc.)</li>
+  <li>A normalized form of the search text (lowercased, accents stripped)</li>
+  <li>Whether we found a match and the top score</li>
+</ul>
+<p>If you paste a URL, the URL itself is not stored &mdash; only the structured fields we extract from it (producer, farm, varietal, process, origin).</p>
+
+<h2>Third parties</h2>
+<p>When we don&rsquo;t already have a coffee&rsquo;s data, we make HTTP requests to the roaster&rsquo;s public website to fetch it. Those roasters may log our request, but the request comes from the server, not from your browser, and contains no information about you.</p>
+
+<h2>Cookies on outbound links</h2>
+<p>When you click through to a roaster&rsquo;s site, that site has its own privacy policy and may set cookies. We&rsquo;re not in a position to control that.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions, email the contact address listed in our scraper&rsquo;s User-Agent header (visible to roasters in their logs).</p>
+</article>
+{% endblock %}

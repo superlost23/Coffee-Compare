@@ -1,0 +1,43 @@
+[project]
+name = "coffee-compare"
+version = "0.1.0"
+description = "Specialty coffee price comparison across roasters"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "jinja2>=3.1.4",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "psycopg[binary]>=3.2.3",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "httpx>=0.27.2",
+    "selectolax>=0.3.27",
+    "playwright>=1.48.0",
+    "meilisearch>=0.34.0",
+    "anthropic>=0.39.0",
+    "rapidfuzz>=3.10.0",
+    "tomli>=2.0.2",
+    "python-multipart>=0.0.17",
+    "tenacity>=9.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

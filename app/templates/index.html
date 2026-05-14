@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>Find the same coffee, somewhere&nbsp;else.</h1>
+  <p class="lede">Paste a coffee&apos;s URL or search by producer, farm, varietal, or process &mdash; we&rsquo;ll surface the same lot at other roasters and rank by price per ounce. In stock first.</p>
+</section>
+
+<section class="search-card">
+
+  <form class="search-form" hx-post="/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#thinking">
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab is-active" data-target="paste">URL paste</button>
+      <button type="button" class="tab" data-target="fields">Search by field</button>
+    </div>
+
+    <div class="tab-panel" data-panel="paste">
+      <label for="url" class="vh">Coffee URL</label>
+      <input
+        type="url"
+        id="url"
+        name="url"
+        placeholder="https://www.superlost.com/products/&hellip;"
+        autocomplete="off"
+        spellcheck="false"
+      >
+    </div>
+
+    <div class="tab-panel hidden" data-panel="fields">
+      <div class="field-grid">
+        <label>Producer
+          <input type="text" name="producer" placeholder="Edilberto Coronado">
+        </label>
+        <label>Farm
+          <input type="text" name="farm" placeholder="Finca Bellavista">
+        </label>
+        <label>Varietal
+          <input type="text" name="varietal" placeholder="Pink Bourbon">
+        </label>
+        <label>Process
+          <input type="text" name="process" placeholder="Washed">
+        </label>
+        <label>Country
+          <input type="text" name="country" placeholder="Colombia">
+        </label>
+      </div>
+    </div>
+
+    <div class="search-cta">
+      <button type="submit" class="btn-primary">
+        <span class="btn-label">Compare</span>
+        <span id="thinking" class="htmx-indicator">brewing&hellip;</span>
+      </button>
+    </div>
+  </form>
+</section>
+
+<section id="results" aria-live="polite"></section>
+
+{% if explore %}
+<section class="explore">
+
+  {# Headline catalog stats #}
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-num">{{ '{:,}'.format(explore.stats.offerings) }}</div>
+      <div class="stat-label">coffees indexed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">{{ '{:,}'.format(explore.stats.in_stock) }}</div>
+      <div class="stat-label">in stock now</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">{{ explore.stats.roasters }}</div>
+      <div class="stat-label">roasters</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">{{ explore.stats.countries }}</div>
+      <div class="stat-label">origin countries</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">{{ explore.stats.varietals }}</div>
+      <div class="stat-label">varietals</div>
+    </div>
+  </div>
+
+  <header class="explore-head">
+    <h2 class="explore-title">What's brewing</h2>
+    <p class="explore-sub">Click anything to compare across roasters.</p>
+  </header>
+
+  <div class="cloud-grid">
+    {% for kind, label, swatch in [('country','Origins','c'), ('varietal','Varietals','v'), ('producer','Producers','p')] %}
+      {% set section = explore.sections[kind] %}
+      {% if section['items'] %}
+      <section class="cloud cloud-{{ swatch }}">
+        <div class="cloud-head">
+          <span class="cloud-eyebrow">
+            {% if section.mode == 'trending' %}● Trending{% else %}● Popular{% endif %}
+          </span>
+          <h3 class="cloud-title">{{ label }}</h3>
+        </div>
+        <div class="cloud-chips">
+          {% for item in section['items'] %}
+          <form action="/search" method="post" class="cloud-form">
+            <input type="hidden" name="{{ kind }}" value="{{ item.value }}">
+            <button type="submit" class="cloud-chip cloud-chip-w{{ item.weight }}" title="{{ item.count }} {% if section.mode == 'trending' %}{{ 'search' if item.count == 1 else 'searches' }}{% else %}{{ 'offering' if item.count == 1 else 'offerings' }}{% endif %}">
+              <span class="chip-rank">{{ loop.index }}</span>
+              <span class="chip-text">{{ item.value }}</span>
+              <span class="chip-num">{{ item.count }}</span>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tab toggling. No framework needed.
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('is-active'));
+    t.classList.add('is-active');
+    const target = t.dataset.target;
+    panels.forEach(p => {
+      p.classList.toggle('hidden', p.dataset.panel !== target);
+    });
+    // Clear inactive panel inputs so we don't submit conflicting params
+    panels.forEach(p => {
+      if (p.dataset.panel !== target) {
+        p.querySelectorAll('input').forEach(i => i.value = '');
+      }
+    });
+  }));
+</script>
+{% endblock %}
