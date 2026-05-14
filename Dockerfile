@@ -14,10 +14,12 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install -e .
 
-# playwright browsers (optional; only needed for non-Shopify roasters)
-RUN python -m playwright install --with-deps chromium || echo "Playwright install skipped"
+# Playwright is in pyproject.toml for future use but we don't need the browser
+# binaries at runtime yet — skip them to keep image small (~150MB savings).
+# Re-enable when a roaster needs JS-rendered HTML.
 
 COPY . .
 
+# DigitalOcean App Platform sets $PORT; fall back to 8000 for local docker-compose.
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

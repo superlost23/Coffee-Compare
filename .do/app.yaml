@@ -1,0 +1,98 @@
+# DigitalOcean App Platform spec for Coffee Compare.
+# Reference: https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+#
+# Architecture:
+#   - One web service (FastAPI) built from the repo's Dockerfile
+#   - One pre-deploy job that runs Alembic migrations before the new version goes live
+#   - One managed Postgres database (dev tier, cheapest)
+#   - Meilisearch is NOT included here — it's hosted externally on Meilisearch Cloud
+#     (free tier). Provide MEILI_URL + MEILI_MASTER_KEY as env vars at deploy time.
+#
+# To create the app:
+#   doctl apps create --spec .do/app.yaml
+# or via the UI: Create → Apps → "Edit Your App Spec" → paste this file.
+
+name: coffee-compare
+region: nyc
+
+services:
+  - name: web
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: superlost23/Coffee-Compare
+      branch: main
+      deploy_on_push: true
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs   # $5/mo; bump to basic-xs ($12) if RAM tight
+    health_check:
+      http_path: /healthz
+      initial_delay_seconds: 30
+      period_seconds: 15
+      timeout_seconds: 5
+      failure_threshold: 6
+    envs:
+      # DigitalOcean auto-injects these from the managed Postgres add-on below.
+      # SQLAlchemy URL format — psycopg v3 driver.
+      - key: DATABASE_URL
+        value: postgresql+psycopg://${db.USERNAME}:${db.PASSWORD}@${db.HOSTNAME}:${db.PORT}/${db.DATABASE}?sslmode=require
+        scope: RUN_AND_BUILD_TIME
+
+      # --- Meilisearch (external, free tier on cloud.meilisearch.com) -------
+      - key: MEILI_URL
+        value: ${MEILI_URL}
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: MEILI_MASTER_KEY
+        value: ${MEILI_MASTER_KEY}
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+
+      # --- Anthropic (optional — leave blank to skip LLM field extraction) ---
+      - key: ANTHROPIC_API_KEY
+        value: ${ANTHROPIC_API_KEY}
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+
+      # --- Admin auth ------------------------------------------------------
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: ${ADMIN_PASSWORD}
+        type: SECRET
+      - key: ADMIN_PATH_TOKEN
+        value: ${ADMIN_PATH_TOKEN}
+        type: SECRET
+
+      # --- Scraping --------------------------------------------------------
+      - key: SCRAPE_USER_AGENT
+        value: CoffeeCompareBot/0.1
+      - key: SCRAPE_REQUEST_DELAY_MS
+        value: "1000"
+      - key: SCRAPE_TIMEOUT_S
+        value: "30"
+
+jobs:
+  # Run database migrations BEFORE the new web version goes live.
+  - name: db-migrate
+    kind: PRE_DEPLOY
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: superlost23/Coffee-Compare
+      branch: main
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: alembic upgrade head
+    envs:
+      - key: DATABASE_URL
+        value: postgresql+psycopg://${db.USERNAME}:${db.PASSWORD}@${db.HOSTNAME}:${db.PORT}/${db.DATABASE}?sslmode=require
+        scope: RUN_AND_BUILD_TIME
+
+databases:
+  # Smallest managed Postgres ($7/mo). dev tier is fine for this traffic volume.
+  - name: db
+    engine: PG
+    version: "16"
+    production: false
