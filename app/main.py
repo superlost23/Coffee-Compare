@@ -278,7 +278,15 @@ def _fetch_url_on_demand(url: str) -> CoffeeFields:
 
 
 def _meili_query_string(q: CoffeeFields) -> str:
-    parts = [v for v in (q.producer, q.farm, q.varietal, q.country) if v]
+    """Build the text query for Meilisearch.
+
+    Includes every searchable field the user provided. Previously this
+    omitted `process` and `region`, which meant a process-only search
+    (e.g. "Washed") sent an empty query to Meili — Meili then returned
+    50 arbitrary docs, and scoring couldn't surface the actual washed
+    coffees because they weren't in the candidate set.
+    """
+    parts = [v for v in (q.producer, q.farm, q.varietal, q.country, q.region, q.process) if v]
     return " ".join(parts).strip()
 
 
@@ -288,7 +296,12 @@ def _run_match(db: Session, query: CoffeeFields) -> dict:
         return {"exact": [], "similar": [], "alternatives": [], "examined": 0}
 
     qstr = _meili_query_string(query)
-    hits = search_candidates(qstr, limit=50)
+    # Wider net when the query is sparse (one or two fields): popular terms
+    # like "Washed" or "Colombia" match thousands of offerings, and a 50-doc
+    # limit risks all results coming from one or two roasters.
+    fields_set = sum(1 for f in ("producer", "farm", "varietal", "country", "region", "process") if getattr(query, f))
+    candidate_limit = 150 if fields_set <= 2 else 50
+    hits = search_candidates(qstr, limit=candidate_limit)
 
     exact: list[tuple[ScoredMatch, dict]] = []
     similar: list[tuple[ScoredMatch, dict]] = []
