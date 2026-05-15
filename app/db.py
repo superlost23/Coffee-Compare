@@ -9,8 +9,26 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 
+
+def _normalize_db_url(url: str) -> str:
+    """Force the psycopg v3 driver on bare postgres:// URLs.
+
+    DigitalOcean's managed Postgres add-on injects DATABASE_URL as
+    `postgres://...` or `postgresql://...` (no explicit driver), but SQLAlchemy
+    2.x prefers an explicit driver to avoid picking psycopg2 by default. We
+    install psycopg v3 in the Dockerfile, so route everything to it.
+    """
+    if url.startswith("postgresql+"):
+        return url  # already explicit
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://"):]
+    return url
+
+
 engine = create_engine(
-    settings().database_url,
+    _normalize_db_url(settings().database_url),
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=10,
