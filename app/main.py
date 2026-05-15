@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc, func
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from app import admin
@@ -29,6 +30,7 @@ from app.pricing import format_price_per_oz
 from app.search import search_candidates
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="Coffee Compare", docs_url=None, redoc_url=None)
 
@@ -86,6 +88,16 @@ def _popular_in_catalog(db: Session, column, limit: int = 6) -> list[dict]:
     return [{"value": r[0], "count": int(r[1])} for r in rows]
 
 
+_EMPTY_EXPLORE = {
+    "sections": {
+        "country":  {"mode": "popular", "items": []},
+        "varietal": {"mode": "popular", "items": []},
+        "producer": {"mode": "popular", "items": []},
+    },
+    "stats": {"offerings": 0, "in_stock": 0, "roasters": 0, "countries": 0, "varietals": 0},
+}
+
+
 def _homepage_explore(db: Session) -> dict:
     """Bundle three trending/popular lists + headline stats for the homepage.
 
@@ -94,7 +106,20 @@ def _homepage_explore(db: Session) -> dict:
 
     `weight` is a 1-5 size bucket relative to the top item, used by the
     template to scale chip text size for a tag-cloud effect.
+
+    Returns an empty-but-valid shape if the underlying tables don't yet
+    exist (e.g. very first deploy before migrations run) so the homepage
+    can still render rather than 500.
     """
+    try:
+        return _homepage_explore_impl(db)
+    except ProgrammingError as e:
+        log.warning("homepage explore queries failed (likely missing tables): %s", e)
+        db.rollback()
+        return _EMPTY_EXPLORE
+
+
+def _homepage_explore_impl(db: Session) -> dict:
     sections = {}
     column_map = {
         "country": (Offering.country, 8),
