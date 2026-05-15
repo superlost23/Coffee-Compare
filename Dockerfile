@@ -19,9 +19,11 @@ RUN pip install --upgrade pip && pip install -e .
 # Re-enable when a roaster needs JS-rendered HTML.
 
 COPY . .
+RUN chmod +x scripts/start.sh
 
 # DigitalOcean App Platform sets $PORT; fall back to 8000 for local docker-compose.
-# Run migrations before starting the server so a fresh deploy auto-creates the
-# schema. Safe to run on every boot: alembic upgrade head is idempotent.
+# scripts/start.sh runs migrations then starts uvicorn — and importantly does
+# NOT exit on migration failure so we can see the error in runtime logs rather
+# than have the container endlessly crash-loop.
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["./scripts/start.sh"]
